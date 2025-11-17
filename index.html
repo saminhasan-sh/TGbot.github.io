@@ -1,0 +1,199 @@
+<!doctype html>
+
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Telegram Sender — GitHub Pages</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Noto Sans',Helvetica,Arial;max-width:900px;margin:28px auto;padding:16px}
+    h1{font-size:1.6rem;margin-bottom:6px}
+    label{display:block;margin-top:12px;font-weight:600}
+    input[type=text],textarea{width:100%;padding:8px;border:1px solid #ccc;border-radius:6px}
+    button{margin-top:10px;padding:10px 14px;border-radius:8px;border:0;background:#0b84ff;color:white;cursor:pointer}
+    .row{display:flex;gap:10px}
+    .col{flex:1}
+    .small{font-size:0.9rem;color:#555}
+    .log{white-space:pre-wrap;background:#f7f7f7;border:1px solid #eee;padding:10px;border-radius:6px;margin-top:10px;max-height:220px;overflow:auto}
+    footer{margin-top:20px;font-size:0.85rem;color:#666}
+  </style>
+</head>
+<body>
+  <h1>GitHub Pages থেকে Telegram এ পাঠান</h1>
+  <p class="small">এই পেজে প্রথমে আপনার <strong>Bot API Token</strong> এবং <strong>Chat ID</strong> দিন, তারপর টেক্সট, ছবি বা ভিডিও পাঠাতে পারবেন।</p><label>1) Bot API Token</label> <input id="token" type="text" placeholder="উদাহরণ: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11" />
+
+<label>2) Chat ID (user বা channel)</label> <input id="chatId" type="text" placeholder="উদাহরণ: 123456789" />
+
+  <div class="row">
+    <div class="col">
+      <button id="saveBtn">সেভ করুন (localStorage)</button>
+    </div>
+    <div class="col">
+      <button id="clearBtn" style="background:#ef4444">ক্লিয়ার</button>
+    </div>
+  </div>  <hr />
+  <h2>Text পাঠান</h2>
+  <label>Message</label>
+  <textarea id="messageText" rows="4" placeholder="আপনার বার্তা এখানে লিখুন..."></textarea>
+  <div class="row">
+    <div class="col"><button id="sendTextBtn">টেক্সট পাঠান</button></div>
+    <div class="col"><button id="previewBtn" style="background:#10b981">প্রিভিউ (কনসোলে)</button></div>
+  </div>  <hr />
+  <h2>Photo/Video পাঠান</h2>
+  <label>ফাইল নির্বাচন (image/* বা video/*)</label>
+  <input id="fileInput" type="file" accept="image/*,video/*" />
+  <div class="row">
+    <div class="col"><button id="sendFileBtn">ফাইল পাঠান</button></div>
+    <div class="col"><button id="sendByUrlBtn" style="background:#f59e0b">URL থেকে পাঠান</button></div>
+  </div>
+  <label class="small">URL পাঠানোর ক্ষেত্রে একটি সরাসরি ফাইল URL দিন (HTTP/HTTPS)।</label>
+  <input id="fileUrl" type="text" placeholder="https://example.com/photo.jpg" />  <div id="status" class="log"></div>  <footer>
+    <strong>মনে রাখবেন:</strong>
+    <ul>
+      <li>GitHub Pages একদম স্ট্যাটিক—এখানে আপনি টোকেন রাখলে সেটা ব্রাউজার-ব্যবহারকারীরা দেখতে পাবে না (localStorage-এ থাকে) কিন্তু সোর্স কোডে কোন টোকেন লিখবেন না।</li>
+      <li>ব্রাউজার থেকে সরাসরি Telegram Bot API কল করা হলে CORS সমস্যায় পড়তে পারেন। যদি ত্রুটি আসে, নীচে দেয়া "CORS ট্রাবলশুট" অংশ দেখুন।</li>
+    </ul>
+  </footer><script>
+// সহজ ব্যবহারের জন্য helper ফাংশন
+function el(id){return document.getElementById(id)}
+function log(...args){const s = args.map(a=>typeof a==='object'?JSON.stringify(a,null,2):String(a)).join(' ')+"\n"; el('status').textContent = s + el('status').textContent}
+
+// localStorage keys
+const TOKEN_KEY = 'tg_bot_token_v1'
+const CHAT_KEY = 'tg_chat_id_v1'
+
+// DOM
+const tokenInput = el('token')
+const chatInput = el('chatId')
+const saveBtn = el('saveBtn')
+const clearBtn = el('clearBtn')
+const sendTextBtn = el('sendTextBtn')
+const messageText = el('messageText')
+const previewBtn = el('previewBtn')
+const fileInput = el('fileInput')
+const sendFileBtn = el('sendFileBtn')
+const sendByUrlBtn = el('sendByUrlBtn')
+const fileUrlInput = el('fileUrl')
+
+// load saved
+tokenInput.value = localStorage.getItem(TOKEN_KEY) || ''
+chatInput.value = localStorage.getItem(CHAT_KEY) || ''
+
+saveBtn.addEventListener('click', ()=>{
+  localStorage.setItem(TOKEN_KEY, tokenInput.value.trim())
+  localStorage.setItem(CHAT_KEY, chatInput.value.trim())
+  log('টোকেন ও চ্যাট আইডি সেভ হয়েছে।')
+})
+
+clearBtn.addEventListener('click', ()=>{
+  localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(CHAT_KEY)
+  tokenInput.value = ''
+  chatInput.value = ''
+  log('সফলভাবে ক্লিয়ার করা হয়েছে।')
+})
+
+previewBtn.addEventListener('click', ()=>{
+  log('Preview ->', {
+    token_preview: tokenInput.value ? '*** set ***' : 'not set',
+    chat_preview: chatInput.value
+  })
+})
+
+function getToken(){return tokenInput.value.trim() || localStorage.getItem(TOKEN_KEY)}
+function getChat(){return chatInput.value.trim() || localStorage.getItem(CHAT_KEY)}
+
+// send text
+sendTextBtn.addEventListener('click', async ()=>{
+  const token = getToken()
+  const chat = getChat()
+  const text = messageText.value.trim()
+  if(!token || !chat || !text){ log('Token, Chat ID এবং Message সবাই লাগবে।'); return }
+  const url = `https://api.telegram.org/bot${token}/sendMessage`
+  try{
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({chat_id: chat, text: text, parse_mode: 'HTML'})
+    })
+    const data = await resp.json()
+    if(!resp.ok || !data.ok) throw data
+    log('টেক্সট পাঠানো সফল। response:', data)
+  }catch(err){
+    log('টেক্সট পাঠাতে সমস্যা:', err, '\nসম্ভবত CORS বা টোকেন/চ্যাট সঠিক নয়।')
+  }
+})
+
+// send file (file input) - sendPhoto or sendVideo depending on mime
+sendFileBtn.addEventListener('click', async ()=>{
+  const token = getToken()
+  const chat = getChat()
+  const file = fileInput.files[0]
+  if(!token || !chat || !file){ log('Token, Chat ID এবং একটি ফাইল প্রয়োজন।'); return }
+
+  // সিদ্ধান্ত: ছবি হলে sendPhoto, নয় তবে sendDocument (safer)
+  const isImage = file.type.startsWith('image/')
+  const methodName = isImage ? 'sendPhoto' : 'sendDocument'
+  const url = `https://api.telegram.org/bot${token}/${methodName}`
+  const form = new FormData()
+  form.append('chat_id', chat)
+  form.append(isImage ? 'photo' : 'document', file)
+
+  try{
+    const resp = await fetch(url, {method:'POST', body: form})
+    const data = await resp.json()
+    if(!resp.ok || !data.ok) throw data
+    log(`${isImage? 'ছবি' : 'ফাইল'} পাঠানো সফল।`, data)
+  }catch(err){
+    log('ফাইল পাঠাতে সমস্যা:', err, '\nসম্ভবত CORS সমস্যা—নিচের ট্রাবলশুট দেখুন।')
+  }
+})
+
+// send by URL (use sendPhoto/sendVideo/sendDocument depending on extension)
+sendByUrlBtn.addEventListener('click', async ()=>{
+  const token = getToken()
+  const chat = getChat()
+  const fileUrl = fileUrlInput.value.trim()
+  if(!token || !chat || !fileUrl){ log('Token, Chat ID এবং একটি ফাইল URL লাগবে।'); return }
+
+  // Telegram API allows sending a remote URL directly with photo parameter
+  const lower = fileUrl.toLowerCase()
+  let method = 'sendPhoto'
+  if(lower.match(/\.(mp4|mov|mkv|webm)(\?|$)/)) method = 'sendVideo'
+  else if(!lower.match(/\.(jpg|jpeg|png|gif|bmp|webp|mp4|mov|mkv|webm)(\?|$)/)) method = 'sendDocument'
+
+  const url = `https://api.telegram.org/bot${token}/${method}`
+  try{
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({chat_id: chat, [method==='sendPhoto'? 'photo': method==='sendVideo'? 'video' : 'document']: fileUrl})
+    })
+    const data = await resp.json()
+    if(!resp.ok || !data.ok) throw data
+    log('URL থেকে পাঠানো সফল:', data)
+  }catch(err){
+    log('URL থেকে পাঠাতে সমস্যা:', err, '\nসম্ভবত CORS বা Telegram URL policy।')
+  }
+})
+
+// সহজ নির্দেশিকা — ব্যবহারকারীর জন্য
+log('পেজ প্রস্তুত। প্রথমে Token ও Chat ID সেভ করে নিন।')
+
+</script><!--
+  README (সংক্ষেপে):
+  1) এই ফাইলটি GitHub Pages এ আপলোড করে হোস্ট করুন (একটি repo -> Settings -> Pages -> branch চালু করে)।
+  2) ব্রাউজারে পেজ খুলে Bot Token ও Chat ID ভরে Save করুন।
+  3) টেক্সট পাঠাতে "টেক্সট পাঠান" চাপুন। ছবি/ভিডিও পাঠাতে ফাইল সিলেক্ট করে "ফাইল পাঠান" চাপুন।
+
+  CORS ট্রাবলশুট:
+  - অনেক সময় ব্রাউজার থেকে সরাসরি https://api.telegram.org কল করলে CORS বাধা আসতে পারে। যদি ভুল/ত্রুটি দেখায়:
+    1) বিকল্প: সহজ সার্ভার-প্রক্সি ব্যবহার করুন (উদাহরণ: একটি ছোট Node/Cloud Function) যা আপনার টোকেন নিয়ে Telegram API কে কল করবে।
+    2) বিকল্প: cors-anywhere বা নিজস্ব প্রোক্সি সার্ভিস (সতর্ক থাকবেন, টোকেন নিরাপদ রাখুন)।
+    3) বিকল্প: GitHub Pages ছাড়া একটি ব্যাকএন্ড (Netlify Functions, Vercel, Heroku) ব্যবহার করুন।
+
+  সিকিউরিটি টিপস:
+  - কখনই পাবলিক সোর্সে Token হার্ডকোড করবেন। localStorage-এ রাখা তুলনামূলক ভালো, কিন্তু ব্যবহারকারীর মেশিনে থেকে যায়।
+  - বড় প্রডাকশনের জন্য ব্যাকএন্ড ব্যবহার করুন এবং টোকেন সার্ভার-সাইডে রাখুন।
+--></body>
+    </html>
