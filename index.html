@@ -1,0 +1,365 @@
+<!doctype html>
+
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simple Calendar — আপনার ক্যালেন্ডার</title>
+  <style>
+    :root{
+      --bg:#0f1724; /* dark navy */
+      --card:#0b1220;
+      --muted:#94a3b8;
+      --accent:#7c3aed; /* purple */
+      --accent-2:#06b6d4; /* teal */
+      --glass: rgba(255,255,255,0.03);
+      --radius:12px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#071024 0%, #081827 60%);color:#e6eef8}
+    .wrap{max-width:1000px;margin:34px auto;padding:20px}header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+.brand{display:flex;gap:12px;align-items:center}
+.logo{width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:20px}
+h1{font-size:20px;margin:0}
+p.lead{margin:0;color:var(--muted);font-size:13px}
+
+.controls{display:flex;gap:8px;align-items:center}
+button, .btn{background:var(--glass);border:1px solid rgba(255,255,255,0.04);padding:8px 12px;border-radius:10px;color:inherit;cursor:pointer}
+button:hover{transform:translateY(-2px)}
+.btn.primary{background:linear-gradient(90deg,var(--accent),#5b21b6);box-shadow:0 6px 18px rgba(124,58,237,0.12);border:none}
+.btn.ghost{background:transparent;border:1px dashed rgba(255,255,255,0.04)}
+
+.layout{display:grid;grid-template-columns: 1fr 320px;gap:18px}
+
+/* calendar card */
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:16px;border-radius:var(--radius);box-shadow:0 6px 20px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+
+.month-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.month-title{font-size:18px;font-weight:600}
+
+.weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;color:var(--muted);font-size:13px;padding:6px 2px}
+.grid-days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.day{min-height:90px;padding:8px;border-radius:8px;background:transparent;border:1px solid transparent}
+.day.out{opacity:0.35}
+.day.today{border:1px solid rgba(124,58,237,0.9);box-shadow:inset 0 0 18px rgba(124,58,237,0.04)}
+.day .date{font-size:13px;font-weight:600}
+.events{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.event{font-size:12px;padding:6px;border-radius:8px;background:linear-gradient(90deg, rgba(124,58,237,0.12), rgba(6,182,212,0.06));border:1px solid rgba(255,255,255,0.02);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* sidebar */
+.sidebar .upcoming{display:flex;flex-direction:column;gap:10px}
+.event-row{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03)}
+.event-row .meta{font-size:13px}
+.empty{color:var(--muted);font-size:13px;padding:18px;text-align:center}
+
+/* modal */
+.modal-backdrop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:20px}
+.modal{width:100%;max-width:480px;background:linear-gradient(180deg,#071026,#071021);padding:16px;border-radius:14px;border:1px solid rgba(255,255,255,0.03)}
+.form-row{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+label{font-size:13px;color:var(--muted)}
+input[type=text], input[type=date], input[type=time], textarea, select{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:10px;border-radius:8px;color:inherit}
+
+.modal-actions{display:flex;gap:8px;justify-content:flex-end}
+
+footer{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
+
+/* responsive */
+@media (max-width:900px){.layout{grid-template-columns:1fr}.sidebar{order:2}}
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo">CAL</div>
+        <div>
+          <h1>Calendar Website</h1>
+          <p class="lead">ঘটনা যোগ করুন, সম্পাদনা করুন, এবং লোকাল ডিভাইসে সংরক্ষণ করুন।</p>
+        </div>
+      </div>
+      <div class="controls">
+        <button id="todayBtn" class="btn ghost">Today</button>
+        <button id="prev" class="btn">Prev</button>
+        <button id="next" class="btn">Next</button>
+        <button id="addEventBtn" class="btn primary">নতুন ইভেন্ট</button>
+      </div>
+    </header><main class="layout">
+  <section class="card calendar-card">
+    <div class="month-head">
+      <div class="month-title" id="monthTitle">November 2025</div>
+      <div class="muted" id="yearSub"></div>
+    </div>
+
+    <div class="weekdays">
+      <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+    </div>
+
+    <div class="grid-days" id="daysGrid"></div>
+    <footer>Click a day to add an event. ইভেন্টগুলো আপনার ব্রাউজারে সংরক্ষিত থাকবে।</footer>
+  </section>
+
+  <aside class="sidebar card">
+    <h3 style="margin-top:0">আসন্ন ইভেন্ট</h3>
+    <div class="upcoming" id="upcomingList"></div>
+    <div style="height:8px"></div>
+    <button id="clearAll" class="btn ghost">সব ইভেন্ট মুছুন</button>
+  </aside>
+</main>
+
+  </div>  <!-- modal -->  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal">
+      <h3 id="modalTitle">নতুন ইভেন্ট</h3>
+      <div class="form-row">
+        <label>শিরোনাম</label>
+        <input type="text" id="evtTitle" placeholder="ইভেন্ট শিরোনাম" />
+      </div>
+      <div class="form-row">
+        <label>তারিখ</label>
+        <input type="date" id="evtDate" />
+      </div>
+      <div class="form-row">
+        <label>সময় (ঐচ্ছিক)</label>
+        <input type="time" id="evtTime" />
+      </div>
+      <div class="form-row">
+        <label>বিবরণ</label>
+        <textarea id="evtDesc" rows="3" placeholder="বিস্তারিত (ঐচ্ছিক)"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button id="deleteBtn" class="btn ghost" style="display:none">Delete</button>
+        <button id="cancelBtn" class="btn">Cancel</button>
+        <button id="saveBtn" class="btn primary">Save</button>
+      </div>
+    </div>
+  </div>  <script>
+    // Simple calendar app
+    (function(){
+      const daysGrid = document.getElementById('daysGrid');
+      const monthTitle = document.getElementById('monthTitle');
+      const upcomingList = document.getElementById('upcomingList');
+      const modalBackdrop = document.getElementById('modalBackdrop');
+      const addEventBtn = document.getElementById('addEventBtn');
+      const prevBtn = document.getElementById('prev');
+      const nextBtn = document.getElementById('next');
+      const todayBtn = document.getElementById('todayBtn');
+      const clearAll = document.getElementById('clearAll');
+
+      // form
+      const evtTitle = document.getElementById('evtTitle');
+      const evtDate = document.getElementById('evtDate');
+      const evtTime = document.getElementById('evtTime');
+      const evtDesc = document.getElementById('evtDesc');
+      const saveBtn = document.getElementById('saveBtn');
+      const cancelBtn = document.getElementById('cancelBtn');
+      const deleteBtn = document.getElementById('deleteBtn');
+      const modalTitle = document.getElementById('modalTitle');
+
+      let current = new Date();
+      let selectedEventId = null;
+
+      const STORAGE_KEY = 'calendar_events_v1';
+
+      function loadEvents(){
+        try{
+          return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        }catch(e){return []}
+      }
+      function saveEvents(list){ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+
+      function getEventsForDate(dateStr){
+        const events = loadEvents();
+        return events.filter(e => e.date === dateStr).sort((a,b)=> (a.time||'') > (b.time||'') ? 1 : -1);
+      }
+
+      function buildCalendar(date){
+        daysGrid.innerHTML='';
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const first = new Date(year, month, 1);
+        const last = new Date(year, month+1, 0);
+        const startDay = first.getDay();
+        const totalDays = last.getDate();
+
+        monthTitle.textContent = first.toLocaleString('en-US',{month:'long'}) + ' ' + year;
+
+        // days from prev month
+        const prevLast = new Date(year, month, 0).getDate();
+        const totalCells = Math.ceil((startDay + totalDays) / 7) * 7;
+
+        for(let i=0;i<totalCells;i++){
+          const cell = document.createElement('div');
+          cell.className='day card-day';
+          const dayIndex = i - startDay + 1;
+
+          if(i < startDay){
+            // previous month
+            cell.classList.add('out');
+            const d = prevLast - (startDay - i - 1);
+            cell.innerHTML = `<div class="date">${d}</div>`;
+          } else if(dayIndex > totalDays){
+            // next month
+            cell.classList.add('out');
+            const d = dayIndex - totalDays;
+            cell.innerHTML = `<div class="date">${d}</div>`;
+          } else {
+            const d = dayIndex;
+            const dateStr = toYYYYMMDD(new Date(year,month,d));
+            cell.innerHTML = `<div class="date">${d}</div><div class="events" data-date="${dateStr}"></div>`;
+
+            // mark today
+            const now = new Date();
+            if(now.getFullYear()===year && now.getMonth()===month && now.getDate()===d){
+              cell.classList.add('today');
+            }
+
+            // attach click to open modal for that date
+            cell.addEventListener('click', (ev)=>{
+              openModalForDate(dateStr);
+              ev.stopPropagation();
+            });
+
+            // render day's events
+            const evContainer = cell.querySelector('.events');
+            const events = getEventsForDate(dateStr);
+            events.slice(0,3).forEach(ev=>{
+              const e = document.createElement('div');
+              e.className='event';
+              e.textContent = (ev.time ? (ev.time + ' • ') : '') + ev.title;
+              e.title = ev.desc || '';
+              e.addEventListener('click', (me)=>{ me.stopPropagation(); openModalForEvent(ev.id); });
+              evContainer.appendChild(e);
+            });
+          }
+          daysGrid.appendChild(cell);
+        }
+      }
+
+      function refresh(){
+        buildCalendar(current);
+        renderUpcoming();
+      }
+
+      function toYYYYMMDD(d){
+        const y = d.getFullYear();
+        const m = String(d.getMonth()+1).padStart(2,'0');
+        const dd = String(d.getDate()).padStart(2,'0');
+        return `${y}-${m}-${dd}`;
+      }
+
+      function openModalForDate(dateStr){
+        selectedEventId = null;
+        modalTitle.textContent = 'নতুন ইভেন্ট';
+        evtTitle.value = '';
+        evtDate.value = dateStr;
+        evtTime.value = '';
+        evtDesc.value = '';
+        deleteBtn.style.display='none';
+        showModal();
+      }
+
+      function openModalForEvent(id){
+        const events = loadEvents();
+        const ev = events.find(x=>x.id===id);
+        if(!ev) return;
+        selectedEventId = id;
+        modalTitle.textContent = 'ইভেন্ট সম্পাদনা';
+        evtTitle.value = ev.title;
+        evtDate.value = ev.date;
+        evtTime.value = ev.time || '';
+        evtDesc.value = ev.desc || '';
+        deleteBtn.style.display='inline-block';
+        showModal();
+      }
+
+      function showModal(){
+        modalBackdrop.style.display='flex';
+      }
+      function hideModal(){ modalBackdrop.style.display='none'; }
+
+      saveBtn.addEventListener('click', ()=>{
+        const title = evtTitle.value.trim();
+        const date = evtDate.value;
+        if(!title || !date){ alert('শিরোনাম এবং তারিখ পূরণ করুন'); return; }
+        const time = evtTime.value;
+        const desc = evtDesc.value.trim();
+
+        const events = loadEvents();
+        if(selectedEventId){
+          // update
+          const idx = events.findIndex(e=>e.id===selectedEventId);
+          if(idx>-1){ events[idx] = {...events[idx], title, date, time, desc}; }
+        } else {
+          const id = 'evt_' + Date.now() + '_' + Math.floor(Math.random()*9999);
+          events.push({id,title,date,time,desc,created:Date.now()});
+        }
+        saveEvents(events);
+        hideModal();
+        refresh();
+      });
+
+      cancelBtn.addEventListener('click', ()=>{ hideModal(); });
+      modalBackdrop.addEventListener('click', (e)=>{ if(e.target===modalBackdrop) hideModal(); });
+
+      deleteBtn.addEventListener('click', ()=>{
+        if(!selectedEventId) return;
+        if(!confirm('আপনি কি নিশ্চিত? ইভেন্টটি মুছে যাবে।')) return;
+        let events = loadEvents();
+        events = events.filter(e=>e.id!==selectedEventId);
+        saveEvents(events);
+        hideModal();
+        refresh();
+      });
+
+      addEventBtn.addEventListener('click', ()=>{ openModalForDate(toYYYYMMDD(new Date())); });
+
+      prevBtn.addEventListener('click', ()=>{ current = new Date(current.getFullYear(), current.getMonth()-1, 1); refresh(); });
+      nextBtn.addEventListener('click', ()=>{ current = new Date(current.getFullYear(), current.getMonth()+1, 1); refresh(); });
+      todayBtn.addEventListener('click', ()=>{ current = new Date(); refresh(); });
+
+      function renderUpcoming(){
+        const events = loadEvents();
+        const now = new Date();
+        const sorted = events.slice().sort((a,b)=> (a.date> b.date)?1: (a.date < b.date?-1: (a.time || '') > (b.time||'') ? 1:-1));
+        upcomingList.innerHTML='';
+        const soon = sorted.filter(e=> new Date(e.date+'T00:00:00') >= new Date(now.getFullYear()-1,0,1)).slice(0,8);
+        if(soon.length===0){ upcomingList.innerHTML='<div class="empty">কোনো ইভেন্ট নেই</div>'; return; }
+        soon.forEach(ev=>{
+          const row = document.createElement('div');
+          row.className='event-row';
+          const left = document.createElement('div');
+          left.className='meta';
+          left.innerHTML = `<div style="font-weight:600">${ev.title}</div><div style="color:var(--muted);font-size:12px">${ev.date} ${ev.time?(' • '+ev.time):''}</div>`;
+          const right = document.createElement('div');
+          right.style.display='flex';right.style.gap='6px';
+          const open = document.createElement('button'); open.className='btn'; open.textContent='Open';
+          open.addEventListener('click', ()=> openModalForEvent(ev.id));
+          const del = document.createElement('button'); del.className='btn ghost'; del.textContent='Delete';
+          del.addEventListener('click', ()=>{ if(confirm('মুছবেন?')){ let list = loadEvents().filter(x=>x.id!==ev.id); saveEvents(list); refresh(); } });
+          right.appendChild(open); right.appendChild(del);
+          row.appendChild(left); row.appendChild(right);
+          upcomingList.appendChild(row);
+        });
+      }
+
+      clearAll.addEventListener('click', ()=>{
+        if(!confirm('সব ইভেন্ট মুছে ফেলা হবে। চলবে?')) return;
+        localStorage.removeItem(STORAGE_KEY);
+        refresh();
+      });
+
+      // helper to open event if clicking event inside day
+      function tryOpenFromHash(){
+        // optional: support deep link like #date=2025-11-17
+        if(location.hash.startsWith('#date=')){ const d = location.hash.replace('#date=',''); openModalForDate(d); }
+      }
+
+      // initial
+      current = new Date();
+      refresh();
+      tryOpenFromHash();
+
+    })();
+  </script></body>
+  </html>
